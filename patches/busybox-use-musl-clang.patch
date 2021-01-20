@@ -1,0 +1,48 @@
+diff --git i/Makefile w/Makefile
+index 48b79759b..b47458ab2 100644
+--- i/Makefile
++++ w/Makefile
+@@ -271,15 +271,15 @@ export quiet Q KBUILD_VERBOSE
+ # Look for make include files relative to root of kernel src
+ MAKEFLAGS += --include-dir=$(srctree)
+ 
+-HOSTCC  	= gcc
+-HOSTCXX  	= g++
++HOSTCC  	= musl-clang
++HOSTCXX  	= musl-clang
+ HOSTCFLAGS	:=
+ HOSTCXXFLAGS	:=
+ # We need some generic definitions
+ include $(srctree)/scripts/Kbuild.include
+ 
+-HOSTCFLAGS	+= $(call hostcc-option,-Wall -Wstrict-prototypes -O2 -fomit-frame-pointer,)
+-HOSTCXXFLAGS	+= -O2
++#HOSTCFLAGS	+= $(call hostcc-option,-Wall -Wstrict-prototypes -Oz -fomit-frame-pointer,)
++#HOSTCXXFLAGS	+= -Oz
+ 
+ # For maximum performance (+ possibly random breakage, uncomment
+ # the following)
+@@ -288,15 +288,15 @@ MAKEFLAGS += -rR
+ 
+ # Make variables (CC, etc...)
+ 
+-AS		= $(CROSS_COMPILE)as
+-CC		= $(CROSS_COMPILE)gcc
+-LD		= $(CC) -nostdlib
++AS		= llvm-as
++CC		= musl-clang
++LD		= musl-clang -nostdlib
+ CPP		= $(CC) -E
+-AR		= $(CROSS_COMPILE)ar
+-NM		= $(CROSS_COMPILE)nm
+-STRIP		= $(CROSS_COMPILE)strip
+-OBJCOPY		= $(CROSS_COMPILE)objcopy
+-OBJDUMP		= $(CROSS_COMPILE)objdump
++AR		= llvm-ar
++NM		= llvm-nm
++STRIP		= llvm-strip
++OBJCOPY		= llvm-objcopy
++OBJDUMP		= llvm-objdump
+ PKG_CONFIG	?= $(CROSS_COMPILE)pkg-config
+ AWK		= awk
+ GENKSYMS	= scripts/genksyms/genksyms

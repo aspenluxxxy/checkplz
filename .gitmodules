@@ -1,0 +1,31 @@
+[submodule "libraries/musl"]
+	path = libraries/musl
+	url = git://git.musl-libc.org/musl
+[submodule "libraries/libusbmuxd"]
+	path = libraries/libusbmuxd
+	url = https://github.com/libimobiledevice/libusbmuxd
+[submodule "libraries/libplist"]
+	path = libraries/libplist
+	url = https://github.com/libimobiledevice/libplist
+[submodule "programs/dropbear"]
+	path = programs/dropbear
+	url = https://github.com/mkj/dropbear
+[submodule "programs/busybox"]
+	path = programs/busybox
+	url = https://git.busybox.net/busybox
+[submodule "libraries/linux"]
+	path = libraries/linux
+	url = https://github.com/samitolvanen/linux
+	branch = clang-lto
+[submodule "programs/usbmuxd"]
+	path = programs/usbmuxd
+	url = https://github.com/libimobiledevice/usbmuxd
+[submodule "libraries/libimobiledevice"]
+	path = libraries/libimobiledevice
+	url = https://github.com/libimobiledevice/libimobiledevice
+[submodule "libraries/openssl"]
+	path = libraries/openssl
+	url = https://github.com/openssl/openssl
+[submodule "libraries/libusb"]
+	path = libraries/libusb
+	url = https://github.com/libusb/libusb

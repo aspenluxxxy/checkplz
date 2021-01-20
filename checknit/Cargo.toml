@@ -1,0 +1,26 @@
+[package]
+name = "checknit"
+version = "0.1.0"
+authors = ["aspen <aspenuwu@protonmail.com>"]
+edition = "2018"
+license = "GPL-3.0"
+publish = false
+
+[dependencies]
+backtrace = { version = "0.3", optional = true }
+blake3 = "0.3"
+cursive = { version = "0.16", default-features = false, features = ["termion-backend"] }
+hex-literal = "0.3"
+libc = "0.2"
+termion = "1.5"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+debug = false
+
+[profile.release.package.'*']
+opt-level = 'z'
+codegen-units = 1
+debug = false
