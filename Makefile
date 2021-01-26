@@ -38,15 +38,8 @@ export AR             := llvm-ar
 export CC             := ccache ${SCRIPTS_DIR}/musl-clang
 export PATH           := ${SCRIPTS_DIR}:$(PATH)
 
-all: linux musl busybox init libplist libusbmuxd openssl libimobiledevice libusb usbmuxd readline ncurses irecovery dropbear initramfs iso
+all: initramfs iso
 
-init: musl
-	cargo build --release --target x86_64-unknown-linux-musl --manifest-path "${CHECKNIT_DIR}/Cargo.toml"
-	llvm-strip --strip-all "${CHECKNIT_DIR}/target/x86_64-unknown-linux-musl/release/checknit"
-	sstrip -z "${CHECKNIT_DIR}/target/x86_64-unknown-linux-musl/release/checknit"
-
-clean_init:
-	cargo clean --manifest-path "${CHECKNIT_DIR}/Cargo.toml"
 
 linux:
 	cp -f "${CONFIG_DIR}/linux.config" "${LINUX_DIR}/.config"
@@ -271,7 +264,19 @@ clean_dropbear:
 clean_sysroot:
 	rm -rf "${SYSROOT_DIR}/bin" "${SYSROOT_DIR}/include" "${SYSROOT_DIR}/lib" "${SYSROOT_DIR}/share" "${BUILD_DIR}/bzImage" "${BUILD_DIR}/init.xz"
 
-initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear irecovery
+initramfs_pre: linux musl busybox libusbmuxd usbmuxd dropbear irecovery
+	curl -sS --tlsv1.2 "https://assets.checkra.in/downloads/linux/cli/x86_64/${CHECKRA1N_VERSION}/checkra1n" -o "${SYSROOT_DIR}/bin/checkra1n"
+	chmod +x "${SYSROOT_DIR}/bin/checkra1n"
+
+init: initramfs_pre
+	cargo build --release --target x86_64-unknown-linux-musl --manifest-path "${CHECKNIT_DIR}/Cargo.toml"
+	llvm-strip --strip-all "${CHECKNIT_DIR}/target/x86_64-unknown-linux-musl/release/checknit"
+	sstrip -z "${CHECKNIT_DIR}/target/x86_64-unknown-linux-musl/release/checknit"
+
+clean_init:
+	cargo clean --manifest-path "${CHECKNIT_DIR}/Cargo.toml"
+
+initramfs: initramfs_pre init
 	mkdir -p \
 		"${INITRAMFS_DIR}/bin" \
 		"${INITRAMFS_DIR}/dev" \
@@ -291,6 +296,7 @@ initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear irecovery
 	cp -rf "${ROOT_DIR}/licenses"/*.txt   "${INITRAMFS_DIR}/"
 	cp -rf -t "${INITRAMFS_DIR}/bin" \
 		"${SYSROOT_DIR}/bin/busybox" \
+		"${SYSROOT_DIR}/bin/checkra1n" \
 		"${SYSROOT_DIR}/bin/dropbearmulti" \
 		"${SYSROOT_DIR}/bin/iproxy" \
 		"${SYSROOT_DIR}/bin/irecovery" \
@@ -299,8 +305,6 @@ initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear irecovery
 	ln -sf "/bin/busybox"       "${INITRAMFS_DIR}/sbin/mdev"
 	ln -sf "/bin/dropbearmulti" "${INITRAMFS_DIR}/bin/dbclient"
 	ln -sf "/bin/dropbearmulti" "${INITRAMFS_DIR}/bin/scp"
-	curl -sS --tlsv1.2 "https://assets.checkra.in/downloads/linux/cli/x86_64/${CHECKRA1N_VERSION}/checkra1n" -o "${INITRAMFS_DIR}/bin/checkra1n"
-	chmod +x "${INITRAMFS_DIR}/bin/checkra1n"
 	cd "${INITRAMFS_DIR}" && \
 		fd -E ".keep" -I | \
 		cpio -ov --format=newc --owner=root:root | \

@@ -110,7 +110,7 @@ dependencies = [
  "backtrace",
  "blake3",
  "cursive",
- "hex-literal",
+ "hex",
  "libc",
  "termion",
 ]
@@ -306,10 +306,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6503fe142514ca4799d4c26297c4248239fe8838d827db6bd6065c6ed29a6ce"
 
 [[package]]
-name = "hex-literal"
-version = "0.3.1"
+name = "hex"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5af1f635ef1bc545d78392b136bfe1c9809e029023c84a3638a864a10b8819c8"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 
 [[package]]
 name = "ident_case"
