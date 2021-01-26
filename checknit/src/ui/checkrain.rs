@@ -1,5 +1,5 @@
 /*
-	checknit, an init script + simple UI for  checkplz
+	checknit, an init script + simple UI for checkplz
 
 	Copyright (C) 2021  aspen
 

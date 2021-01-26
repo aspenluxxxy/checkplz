@@ -12,7 +12,9 @@ CHECKNIT_DIR          := ${ROOT_DIR}/checknit
 MUSL_DIR              := ${LIBS_DIR}/musl
 
 LIBIMOBILEDEVICE_DIR  := ${LIBS_DIR}/libimobiledevice
+LIBNCURSES_DIR        := ${LIBS_DIR}/ncurses
 LIBPLIST_DIR          := ${LIBS_DIR}/libplist
+LIBREADLINE_DIR       := ${LIBS_DIR}/readline
 LIBUSBMUXD_DIR        := ${LIBS_DIR}/libusbmuxd
 LIBUSB_DIR            := ${LIBS_DIR}/libusb
 LINUX_DIR             := ${LIBS_DIR}/linux
@@ -20,6 +22,7 @@ OPENSSL_DIR           := ${LIBS_DIR}/openssl
 
 BUSYBOX_DIR           := ${APPS_DIR}/busybox
 DROPBEAR_DIR          := ${APPS_DIR}/dropbear
+IRECOVERY_DIR         := ${APPS_DIR}/irecovery
 USBMUXD_DIR           := ${APPS_DIR}/usbmuxd
 
 MUSL_CFLAGS           := -Oz -s -ffunction-sections -fdata-sections
@@ -35,7 +38,7 @@ export AR             := llvm-ar
 export CC             := ccache ${SCRIPTS_DIR}/musl-clang
 export PATH           := ${SCRIPTS_DIR}:$(PATH)
 
-all: linux musl busybox init libplist libusbmuxd openssl libimobiledevice libusb usbmuxd dropbear initramfs iso
+all: linux musl busybox init libplist libusbmuxd openssl libimobiledevice libusb usbmuxd readline ncurses irecovery dropbear initramfs iso
 
 init: musl
 	cargo build --release --target x86_64-unknown-linux-musl --manifest-path "${CHECKNIT_DIR}/Cargo.toml"
@@ -149,7 +152,7 @@ clean_libimobiledevice:
 
 libusb: export CFLAGS = ${LTO_CFLAGS} -Werror=implicit-function-declaration
 libusb: export LDFLAGS = ${LTO_LDFLAGS}
-libusb:
+libusb: linux musl
 	cd "${LIBUSB_DIR}" && ./autogen.sh \
 		--prefix="${SYSROOT_DIR}" \
 		--enable-shared=no \
@@ -187,6 +190,56 @@ usbmuxd: libusb libusbmuxd libimobiledevice
 		"${USBMUXD_DIR}/src/usb.c" \
 		"${USBMUXD_DIR}/src/utils.c"
 
+readline: export CFLAGS = ${LTO_CFLAGS}
+readline: export LDFLAGS = ${LTO_LDFLAGS}
+readline: linux musl
+	cd "${LIBREADLINE_DIR}" && ./configure \
+		--prefix="${SYSROOT_DIR}" \
+		--enable-shared=no \
+		--enable-static=yes \
+		--disable-install-examples
+	$(MAKE) -C "${LIBREADLINE_DIR}"
+	$(MAKE) -C "${LIBREADLINE_DIR}" install
+
+clean_readline:
+	$(MAKE) -C "${LIBREADLINE_DIR}" clean
+
+ncurses: export CFLAGS = ${LTO_CFLAGS}
+ncurses: export LDFLAGS = ${LTO_LDFLAGS}
+ncurses: linux musl
+	cd "${LIBNCURSES_DIR}" && ./configure \
+		--prefix="${SYSROOT_DIR}" \
+		--disable-big-core \
+		--with-normal \
+		--without-ada \
+		--without-cxx \
+		--without-cxx-binding \
+		--without-debug \
+		--without-manpages \
+		--without-progs \
+		--without-tack \
+		--without-tests
+	$(MAKE) -C "${LIBNCURSES_DIR}"
+	$(MAKE) -C "${LIBNCURSES_DIR}" install
+
+clean_ncurses:
+	$(MAKE) -C "${LIBNCURSES_DIR}" clean
+
+irecovery: export CFLAGS = ${LTO_CFLAGS}
+irecovery: export LDFLAGS = ${LTO_LDFLAGS} -lncurses
+irecovery: libusb readline ncurses
+	cd "${IRECOVERY_DIR}" && ./autogen.sh \
+		--prefix="${SYSROOT_DIR}" \
+		--enable-shared=no \
+		--enable-static=yes \
+		--disable-install-examples \
+		--without-udev
+	$(MAKE) -C "${IRECOVERY_DIR}"
+	$(MAKE) -C "${IRECOVERY_DIR}" install
+
+clean_irecovery:
+	$(MAKE) -C "${IRECOVERY_DIR}" clean
+
 busybox: export CFLAGS = ${LTO_CFLAGS}
 busybox: export LDFLAGS = ${LTO_LDFLAGS}
 busybox: linux musl
@@ -218,11 +271,12 @@ clean_dropbear:
 clean_sysroot:
 	rm -rf "${SYSROOT_DIR}/bin" "${SYSROOT_DIR}/include" "${SYSROOT_DIR}/lib" "${SYSROOT_DIR}/share" "${BUILD_DIR}/bzImage" "${BUILD_DIR}/init.xz"
 
-initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear
+initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear irecovery
 	mkdir -p \
 		"${INITRAMFS_DIR}/bin" \
 		"${INITRAMFS_DIR}/dev" \
 		"${INITRAMFS_DIR}/etc" \
+		"${INITRAMFS_DIR}/etc/mdev" \
 		"${INITRAMFS_DIR}/etc/network" \
 		"${INITRAMFS_DIR}/etc/terminfo/l" \
 		"${INITRAMFS_DIR}/proc" \
@@ -233,17 +287,18 @@ initramfs: linux musl busybox init libusbmuxd usbmuxd dropbear
 		"${INITRAMFS_DIR}/var/run"
 	cp -f  "${CHECKNIT_DIR}/target/x86_64-unknown-linux-musl/release/checknit" "${INITRAMFS_DIR}/init"
 	cp -f  "${CONFIG_DIR}/linux.terminfo" "${INITRAMFS_DIR}/etc/terminfo/l/linux"
-	cp -rf "${CONFIG_DIR}/odysseyra1n" "${INITRAMFS_DIR}/etc"
-	cp -rf "${ROOT_DIR}/licenses"/*.txt "${INITRAMFS_DIR}/"
+	cp -rf "${CONFIG_DIR}/odysseyra1n"    "${INITRAMFS_DIR}/etc"
+	cp -rf "${ROOT_DIR}/licenses"/*.txt   "${INITRAMFS_DIR}/"
 	cp -rf -t "${INITRAMFS_DIR}/bin" \
 		"${SYSROOT_DIR}/bin/busybox" \
 		"${SYSROOT_DIR}/bin/dropbearmulti" \
 		"${SYSROOT_DIR}/bin/iproxy" \
+		"${SYSROOT_DIR}/bin/irecovery" \
 		"${SYSROOT_DIR}/bin/usbmuxd"
 	printf "auto lo\niface lo inet loopback" > "${INITRAMFS_DIR}/etc/network/interfaces"
-	ln -sf "/bin/dropbearmulti" "${INITRAMFS_DIR}/bin/scp"
+	ln -sf "/bin/busybox"       "${INITRAMFS_DIR}/sbin/mdev"
 	ln -sf "/bin/dropbearmulti" "${INITRAMFS_DIR}/bin/dbclient"
-	ln -sf "/bin/busybox" "${INITRAMFS_DIR}/sbin/mdev"
+	ln -sf "/bin/dropbearmulti" "${INITRAMFS_DIR}/bin/scp"
 	curl -sS --tlsv1.2 "https://assets.checkra.in/downloads/linux/cli/x86_64/${CHECKRA1N_VERSION}/checkra1n" -o "${INITRAMFS_DIR}/bin/checkra1n"
 	chmod +x "${INITRAMFS_DIR}/bin/checkra1n"
 	cd "${INITRAMFS_DIR}" && \
@@ -276,5 +331,6 @@ qemu: initramfs
 	qemu-system-x86_64 -m 1G -kernel "${BUILD_DIR}/bzImage" -initrd "${BUILD_DIR}/init.xz"
 
 _prepare_for_release:
+	rm -f checkplz.iso.b3sum checkplz.iso.sig
 	b3sum checkplz.iso > checkplz.iso.b3sum
 	gpg --output checkplz.iso.sig --detach-sig --armor checkplz.iso

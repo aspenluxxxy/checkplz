@@ -29,3 +29,12 @@
 [submodule "libraries/libusb"]
 	path = libraries/libusb
 	url = https://github.com/libusb/libusb
+[submodule "libraries/readline"]
+	path = libraries/readline
+	url = https://git.savannah.gnu.org/git/readline.git
+[submodule "programs/irecovery"]
+	path = programs/irecovery
+	url = https://github.com/libimobiledevice/libirecovery
+[submodule "libraries/ncurses"]
+	path = libraries/ncurses
+	url = https://github.com/mirror/ncurses
